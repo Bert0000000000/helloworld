@@ -5,13 +5,38 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js"
+    "dev": "node --watch server.js",
+    "test": "jest --coverage --detectOpenHandles --forceExit",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage --detectOpenHandles --forceExit && open coverage/lcov-report/index.html"
   },
   "dependencies": {
     "express": "^4.18.2",
     "cors": "^2.8.5"
   },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "supertest": "^6.3.3"
+  },
   "keywords": ["express", "api", "hello-world"],
   "author": "Zhu Bajie",
-  "license": "MIT"
+  "license": "MIT",
+  "jest": {
+    "testEnvironment": "node",
+    "coverageDirectory": "coverage",
+    "collectCoverageFrom": [
+      "**/*.js",
+      "!node_modules/**",
+      "!tests/**",
+      "!coverage/**"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 80,
+        "functions": 80,
+        "lines": 80,
+        "statements": 80
+      }
+    }
+  }
 }
