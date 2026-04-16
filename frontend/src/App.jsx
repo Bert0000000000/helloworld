@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react'
-import { Layout, Typography, Card, Button, Space, message, theme, Avatar, Row, Col, Tag } from 'antd'
-import { RocketOutlined, CheckCircleOutlined, GlobalOutlined, TeamOutlined, CodeOutlined } from '@ant-design/icons'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { Layout, Typography, Card, Button, Space, message, theme, Avatar, Row, Col, Tag, Dropdown } from 'antd'
+import { RocketOutlined, CheckCircleOutlined, GlobalOutlined, TeamOutlined, CodeOutlined, UserOutlined, LogoutOutlined } from '@ant-design/icons'
+
+import Login from './pages/Login'
 
 const { Header, Content, Footer } = Layout
 const { Title, Paragraph, Text } = Typography
@@ -70,13 +73,34 @@ function useTypewriter(text, speed = 100, startDelay = 500) {
   return { displayedText, isComplete }
 }
 
-function App() {
+// 受保护的路由组件
+function ProtectedRoute({ children }) {
+  const token = localStorage.getItem('token')
+  
+  if (!token) {
+    return <Navigate to="/login" replace />
+  }
+  
+  return children
+}
+
+// 主页面组件
+function HomePage() {
   const [greeting, setGreeting] = useState('')
   const [status, setStatus] = useState('loading')
+  const [user, setUser] = useState(null)
   const { token } = theme.useToken()
 
   // 打字机动画
   const { displayedText, isComplete } = useTypewriter('Hello, World!', 150, 300)
+
+  // 获取用户信息
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user')
+    if (storedUser) {
+      setUser(JSON.parse(storedUser))
+    }
+  }, [])
 
   // 获取后端 API 数据
   useEffect(() => {
@@ -94,6 +118,24 @@ function App() {
       })
   }, [])
 
+  // 退出登录
+  const handleLogout = () => {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    setUser(null)
+    message.success('已退出登录')
+  }
+
+  // 用户菜单
+  const userMenuItems = [
+    {
+      key: 'logout',
+      icon: <LogoutOutlined />,
+      label: '退出登录',
+      onClick: handleLogout
+    }
+  ]
+
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Header style={{ 
@@ -107,10 +149,18 @@ function App() {
           <RocketOutlined /> HelloWorld 应用
         </div>
         <Space>
-          <Tag color="blue">v1.0.0</Tag>
+          <Tag color="blue">v1.1.0</Tag>
           <Tag color="green">
             <CheckCircleOutlined /> 运行中
           </Tag>
+          {user && (
+            <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
+              <Space style={{ color: 'white', cursor: 'pointer' }}>
+                <Avatar size="small" icon={<UserOutlined />} />
+                <Text style={{ color: 'white' }}>{user.username}</Text>
+              </Space>
+            </Dropdown>
+          )}
         </Space>
       </Header>
       
@@ -145,14 +195,14 @@ function App() {
                 <GlobalOutlined style={{ color: '#1890ff', fontSize: '24px' }} />
                 <div style={{ marginTop: '8px' }}>
                   <Text type="secondary">版本</Text>
-                  <div>v1.0.0</div>
+                  <div>v1.1.0 (登录功能)</div>
                 </div>
               </div>
               <div>
                 <CodeOutlined style={{ color: '#722ed1', fontSize: '24px' }} />
                 <div style={{ marginTop: '8px' }}>
                   <Text type="secondary">技术栈</Text>
-                  <div>React + Flask</div>
+                  <div>React + Flask + JWT</div>
                 </div>
               </div>
             </Space>
@@ -213,19 +263,19 @@ function App() {
                 <Space direction="vertical" style={{ width: '100%' }}>
                   <div>
                     <Tag color="blue">后端</Tag>
-                    <Text> Python + Flask 3.0.0</Text>
+                    <Text> Python + Flask + SQLAlchemy</Text>
                   </div>
                   <div>
                     <Tag color="cyan">前端</Tag>
                     <Text> React 18 + Ant Design 5.x</Text>
                   </div>
                   <div>
-                    <Tag color="green">构建</Tag>
-                    <Text> Vite 5.x</Text>
+                    <Tag color="green">认证</Tag>
+                    <Text> JWT + bcrypt</Text>
                   </div>
                   <div>
-                    <Tag color="orange">版本控制</Tag>
-                    <Text> Git + GitHub</Text>
+                    <Tag color="orange">数据库</Tag>
+                    <Text> SQLite</Text>
                   </div>
                 </Space>
               </Card>
@@ -259,7 +309,7 @@ function App() {
             <Button 
               type="primary" 
               size="large"
-              onClick={() => message.success('🎉 功能正常！原型开发完成！')}
+              onClick={() => message.success('🎉 功能正常！登录功能已集成！')}
               style={{ padding: '0 48px' }}
             >
               测试按钮 - 点击验证
@@ -280,6 +330,25 @@ function App() {
         }
       `}</style>
     </Layout>
+  )
+}
+
+// 主应用组件
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route 
+          path="/" 
+          element={
+            <ProtectedRoute>
+              <HomePage />
+            </ProtectedRoute>
+          } 
+        />
+      </Routes>
+    </BrowserRouter>
   )
 }
 
