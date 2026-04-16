@@ -1,0 +1,172 @@
+# 告警规则配置 - HelloWorld 项目
+# 版本：v1.0
+# 创建时间：2026-04-16
+
+groups:
+  # ==================== 系统告警 ====================
+  - name: helloworld-system
+    rules:
+      # CPU 使用率过高
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: P2
+          team: ops
+        annotations:
+          summary: "🖥️ 服务器 CPU 使用率过高"
+          description: "实例 {{ $labels.instance }} CPU 使用率 {{ $value | humanize }}% 持续 5 分钟"
+          runbook_url: "http://wiki.internal/runbooks/HighCPUUsage"
+      
+      # 内存使用率过高
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: P1
+          team: ops
+        annotations:
+          summary: "🧠 服务器内存使用率过高"
+          description: "实例 {{ $labels.instance }} 内存使用率 {{ $value | humanize }}%"
+          runbook_url: "http://wiki.internal/runbooks/HighMemoryUsage"
+      
+      # 磁盘空间不足
+      - alert: DiskSpaceLow
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100 < 10
+        for: 10m
+        labels:
+          severity: P1
+          team: ops
+        annotations:
+          summary: "💾 磁盘空间不足"
+          description: "实例 {{ $labels.instance }} 根磁盘剩余 {{ $value | humanize }}%"
+          runbook_url: "http://wiki.internal/runbooks/DiskSpaceLow"
+      
+      # 磁盘 IO 过高
+      - alert: HighDiskIO
+        expr: avg by(instance) (rate(node_disk_io_time_seconds_total[5m])) > 0.8
+        for: 5m
+        labels:
+          severity: P2
+          team: ops
+        annotations:
+          summary: "📀 磁盘 IO 使用率过高"
+          description: "实例 {{ $labels.instance }} 磁盘 IO {{ $value | humanizePercentage }}"
+      
+      # 网络带宽过高
+      - alert: HighNetworkUsage
+        expr: sum by(instance) (rate(node_network_receive_bytes_total{device!="lo"}[5m]) + rate(node_network_transmit_bytes_total{device!="lo"}[5m])) > 100000000
+        for: 5m
+        labels:
+          severity: P2
+          team: ops
+        annotations:
+          summary: "🌐 网络带宽使用率过高"
+          description: "实例 {{ $labels.instance }} 网络流量 {{ $value | humanize }} B/s"
+
+  # ==================== 应用告警 ====================
+  - name: helloworld-application
+    rules:
+      # 服务宕机
+      - alert: ServiceDown
+        expr: up{job="helloworld-app"} == 0
+        for: 1m
+        labels:
+          severity: P0
+          team: ops
+        annotations:
+          summary: "🔴 服务不可用"
+          description: "实例 {{ $labels.instance }} 已宕机超过 1 分钟"
+          runbook_url: "http://wiki.internal/runbooks/ServiceDown"
+      
+      # HTTP 5xx 错误率过高
+      - alert: HighErrorRate5xx
+        expr: sum(rate(http_requests_total{status=~"5..", job="helloworld-app"}[5m])) / sum(rate(http_requests_total{job="helloworld-app"}[5m])) > 0.01
+        for: 5m
+        labels:
+          severity: P1
+          team: ops
+        annotations:
+          summary: "❌ 应用 5xx 错误率过高"
+          description: "5xx 错误率 {{ $value | humanizePercentage }} (阈值 1%)"
+          runbook_url: "http://wiki.internal/runbooks/HighErrorRate"
+      
+      # HTTP 4xx 错误率过高
+      - alert: HighErrorRate4xx
+        expr: sum(rate(http_requests_total{status=~"4..", job="helloworld-app"}[5m])) / sum(rate(http_requests_total{job="helloworld-app"}[5m])) > 0.05
+        for: 5m
+        labels:
+          severity: P2
+          team: ops
+        annotations:
+          summary: "⚠️ 应用 4xx 错误率过高"
+          description: "4xx 错误率 {{ $value | humanizePercentage }} (阈值 5%)"
+      
+      # 请求延迟过高 (P99)
+      - alert: HighLatencyP99
+        expr: histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{job="helloworld-app"}[5m])) by (le)) > 1
+        for: 5m
+        labels:
+          severity: P1
+          team: ops
+        annotations:
+          summary: "🐌 请求延迟过高 (P99)"
+          description: "P99 延迟 {{ $value | humanizeDuration }} (阈值 1s)"
+      
+      # 请求延迟过高 (P50)
+      - alert: HighLatencyP50
+        expr: histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket{job="helloworld-app"}[5m])) by (le)) > 0.5
+        for: 5m
+        labels:
+          severity: P2
+          team: ops
+        annotations:
+          summary: "🐌 请求延迟偏高 (P50)"
+          description: "P50 延迟 {{ $value | humanizeDuration }} (阈值 500ms)"
+      
+      # 请求量异常下降
+      - alert: LowRequestRate
+        expr: sum(rate(http_requests_total{job="helloworld-app"}[5m])) < 10
+        for: 5m
+        labels:
+          severity: P2
+          team: ops
+        annotations:
+          summary: "📉 请求量异常下降"
+          description: "当前 QPS {{ $value | humanize }} (低于阈值 10)"
+
+  # ==================== 业务告警 ====================
+  - name: helloworld-business
+    rules:
+      # PV 异常下降
+      - alert: PVDrop
+        expr: sum(rate(page_views_total[1h])) < sum(rate(page_views_total[1h] offset 1d)) * 0.2
+        for: 30m
+        labels:
+          severity: P2
+          team: product
+        annotations:
+          summary: "📉 页面访问量异常下降"
+          description: "当前 PV 较昨日同期下降超过 80%"
+      
+      # UV 异常下降
+      - alert: UVDrop
+        expr: sum(users_active{window="1h"}) < sum(users_active{window="1h"} offset 1d) * 0.5
+        for: 1h
+        labels:
+          severity: P2
+          team: product
+        annotations:
+          summary: "📉 活跃用户数异常下降"
+          description: "当前 UV 较昨日同期下降超过 50%"
+      
+      # 转化率过低
+      - alert: LowConversionRate
+        expr: sum(conversions_total) / sum(page_views_total) < 0.01
+        for: 1h
+        labels:
+          severity: P3
+          team: product
+        annotations:
+          summary: "📊 转化率过低"
+          description: "当前转化率 {{ $value | humanizePercentage }} (低于 1%)"

@@ -1,0 +1,160 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "helloworld-business",
+    "title": "HelloWorld 业务监控",
+    "tags": ["helloworld", "business"],
+    "timezone": "Asia/Shanghai",
+    "schemaVersion": 38,
+    "version": 1,
+    "refresh": "1m",
+    "panels": [
+      {
+        "id": 1,
+        "type": "stat",
+        "title": "今日 PV",
+        "gridPos": {"x": 0, "y": 0, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "sum(page_views_total{day=\"today\"})",
+            "legendFormat": "PV"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short"
+          }
+        }
+      },
+      {
+        "id": 2,
+        "type": "stat",
+        "title": "今日 UV",
+        "gridPos": {"x": 6, "y": 0, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "count(count by(user_id) (users_active{day=\"today\"}))",
+            "legendFormat": "UV"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short"
+          }
+        }
+      },
+      {
+        "id": 3,
+        "type": "stat",
+        "title": "转化率",
+        "gridPos": {"x": 12, "y": 0, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "sum(conversions_total) / sum(page_views_total) * 100",
+            "legendFormat": "Conversion Rate"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "decimals": 2
+          }
+        }
+      },
+      {
+        "id": 4,
+        "type": "stat",
+        "title": "跳出率",
+        "gridPos": {"x": 18, "y": 0, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "sum(bounce_events_total) / sum(page_views_total) * 100",
+            "legendFormat": "Bounce Rate"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "decimals": 2
+          }
+        }
+      },
+      {
+        "id": 5,
+        "type": "barchart",
+        "title": "访问量趋势 (小时)",
+        "gridPos": {"x": 0, "y": 4, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "sum(rate(page_views_total[1h]))",
+            "legendFormat": "PV/hour"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short"
+          }
+        }
+      },
+      {
+        "id": 6,
+        "type": "piechart",
+        "title": "用户行为分布",
+        "gridPos": {"x": 12, "y": 4, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "sum by(event_type) (user_events_total)",
+            "legendFormat": "{{event_type}}"
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "type": "table",
+        "title": "页面热度排行 TOP10",
+        "gridPos": {"x": 0, "y": 12, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "topk(10, sum by(page) (page_views_total))",
+            "legendFormat": "{{page}}"
+          }
+        ],
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "renameByName": {
+                "Value": "访问量",
+                "page": "页面"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "type": "timeseries",
+        "title": "转化漏斗",
+        "gridPos": {"x": 12, "y": 12, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "sum(page_views_total)",
+            "legendFormat": "访问"
+          },
+          {
+            "expr": "sum(user_engagements_total)",
+            "legendFormat": "互动"
+          },
+          {
+            "expr": "sum(conversions_total)",
+            "legendFormat": "转化"
+          }
+        ]
+      }
+    ],
+    "time": {
+      "from": "now-24h",
+      "to": "now"
+    }
+  }
+}
