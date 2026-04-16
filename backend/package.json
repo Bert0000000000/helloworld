@@ -1,0 +1,17 @@
+{
+  "name": "hello-world-backend",
+  "version": "1.0.0",
+  "description": "HelloWorld API Backend with Express",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  },
+  "keywords": ["express", "api", "hello-world"],
+  "author": "Zhu Bajie",
+  "license": "MIT"
+}
