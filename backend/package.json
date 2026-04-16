@@ -1,5 +1,5 @@
 {
-  "name": "hello-world-backend",
+  "name": "helloworld-backend",
   "version": "1.0.0",
   "description": "HelloWorld API Backend with Express",
   "main": "server.js",

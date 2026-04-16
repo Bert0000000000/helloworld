@@ -17,7 +17,7 @@
 ## 项目结构
 
 ```
-hello-world-app/
+HelloWorld/
 ├── backend/              # 后端服务
 │   ├── package.json      # 后端依赖配置
 │   ├── server.js         # Express 服务器入口
